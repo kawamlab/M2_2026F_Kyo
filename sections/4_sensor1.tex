@@ -5,22 +5,27 @@
 
 \chapter{高速分光センシングシステムの構築}
 \label{ch:sensor_unit}
-本章では，農業ロボットによる植生状態観察を目的として構築した
+本章では，AGVによる植生生育状態観察を目的として構築した
 高速分光センシングシステムについて述べる．
-対象とする農業環境（信州大学繊維学部の圃場）では，走行しながら連続的に計測を行うため，
-分光データの取得は高い時間分解能と安定性が要求される．
-一方，本研究で使用する浜松ホトニクス製ミニ分光器C12880MAは，外部クロックに同期して出力が更新されるため，
-割込み駆動に基づく一般的な取得方式では高周波領域で取得欠落やタイミングずれが生じやすい．
-そこで本研究では，割込み駆動方式の限界を再現実験により示した上で，
-タイマを用いてC12880MAのCLKを連続生成し，TRGに同期したハードウェアトリガでADC変換を駆動し，
-DMAにより画素列をストリーミング取得するアーキテクチャを設計・実装した．
-さらに，ST立下り後のソフトウェア起動遅延を実測により定量化し，有効画素範囲の補正として取り込むことで，
-\SI{5}{\mega\hertz}級の安定取得を実現した．
-提案手法はSTM32F446REおよびSTM32H723ZGに実装し，
-最終的に\SI{5}{\mega\hertz}での連続取得を実証した．
-Fig.~\ref{fig:c12880ma_photo}に，本研究で使用した小型分光センサ C12880MA を示す．
-Table~\ref{tab:c12880ma_spec}に，本研究におけるシステム設計上，
-特に重要となる主要仕様を示す．
+実験環境（信州大学繊維学部の圃場）では，
+ロボットが走行しながら連続的に計測を行うため，
+分光データの取得には安定性が求められる．
+
+本研究で使用する浜松ホトニクス製の超小型分光センサC12880MAは，外部クロックに同期して信号を出力する仕様である．
+しかし，一般的な割り込み処理に基づくデータ取得方法では，動作が高速になると処理が追いつかず，
+データの欠落やタイミングのズレが生じやすい．
+そこで本研究では，まず再現実験によって割り込み処理の限界を示した上で，
+DMA（Direct Memory Access，以下，DMA）を用いたデータ取得システムを設計・実装した．
+
+具体的には，タイマを用いてセンサへのクロック（CLK信号）を連続的に生成し，
+トリガ信号（TRG信号）に同期してADC変換を開始させる．
+変換されたデータは，DMAによってCPUを介さずにメモリへ直接転送される．
+さらに，信号（ST）の立ち下がりから計測開始までの遅延時間を実測し，
+有効な画素範囲の補正に反映させることで，\SI{5}{\mega\hertz}での安定した連続取得を実現した．
+この手法は，マイクロコントローラ（STM32F446REおよびSTM32H723ZG）上に実装されている．
+
+本研究で使用した分光センサの外観をFig.~\ref{fig:c12880ma_photo}に，
+システム設計において主な仕様をTable~\ref{tab:c12880ma_spec}に示す．
 
 \begin{figure}[b]
   \centering
@@ -50,16 +55,16 @@ Table~\ref{tab:c12880ma_spec}に，本研究におけるシステム設計上，
   \end{tabular}
 \end{table}
 
-\section{本章で用いるセンサユニットの概要}
+\section{センサユニットの概要}
 \label{sec:sensor_unit_overview}
 本研究で用いるセンサユニットは，植生状態観察のための分光計測を中核に，
-生育環境の基礎量（温度・湿度・気圧，\(\mathrm{CO_2}\)濃度）を同時取得できるよう構成した．
-ユニット全体の構成をFig.~\ref{fig:agv_multisensor_overall}に示す．
-なお，環境量センサを含むユニットの基本構成および計測ロジックは先行研究で確立されており，
-本章ではC12880MAの高速取得に直接関与する要素に焦点を当てる．
-各センサおよびMCUのインタフェース回路は付録に示す
+生育環境のデータ（温度・湿度・気圧，\(\mathrm{CO_2}\)濃度）も同時に取得できるセンサユニットを構成した．
+センサユニット全体の構成をFig.~\ref{fig:agv_multisensor_overall}に示す．
+環境量センサの実装および計測ロジックは先行研究で確立されているため，
+本章ではC12880MAの高速駆動を実現するための要素技術に焦点を当てる．
+各センサの仕様およびMCUとのインタフェース回路については，付録
 （Fig.~\ref{fig:mcu_circuit}，Fig.~\ref{fig:c12880ma_circuit}，
-Fig.~\ref{fig:s300l_circuit}，Fig.~\ref{fig:bme280_circuit}）．
+Fig.~\ref{fig:s300l_circuit}，Fig.~\ref{fig:bme280_circuit}，）に示す．
 
 \begin{figure}[t]
   \centering
@@ -68,15 +73,12 @@ Fig.~\ref{fig:s300l_circuit}，Fig.~\ref{fig:bme280_circuit}）．
   \label{fig:agv_multisensor_overall}
 \end{figure}
 
-
-
-
-センサユニットの構成要素と主仕様をTable~\ref{tab:sensor_unit_specs}に示す．
-また，開発したセンサユニットの外観をFig.~\ref{fig:sensor_unit_photo}に示す．
-C12880MAは外部クロックに同期してVIDEO信号が更新されるラインセンサであり，
-MCU側ではトリガ生成とサンプリングタイミングの厳密な同期が必要となる．
-BME280およびS300L-3Vは比較的低速な環境量計測であるが，
-分光フレームと同一の時刻系で統合することで走行中の計測を可能とする．
+センサユニットを構成する部品とその主な仕様をTable~\ref{tab:sensor_unit_specs}に，
+開発したユニットの外観をFig.~\ref{fig:sensor_unit_photo}に示す．
+C12880MAは外部クロックに同期して信号を出力するため，MCU側でタイミング制御を行う必要がある．
+一方，温度・湿度・気圧センサBME280および\(\mathrm{CO_2}\)センサS300L-3Vは
+先行研究で確立されたI\(^2\)Cインタフェースを用いて接続されている．
+これらのセンサの詳細については，それぞれ\ref{appendix:BME280}および\ref{appendix:S300L}に示す．
 
 \begin{figure}[t]
   \centering
@@ -120,26 +122,22 @@ BME280およびS300L-3Vは比較的低速な環境量計測であるが，
   \end{tabular}
 \end{table}
 
-\section{分光センサ駆動モジュールの開発における従来の課題}
-C12880MAセンサは，入力ST信号立下り後にTRG信号を出力し，
-所定回数のTRGに同期してVIDEO信号が有効となる．
-そのタイミング概要をFig.~\ref{fig:c12880ma_timing}に示す．
-従来は，TRG信号の立ち上がりで割り込みを発生させ，
-割り込みサービスルーチン（以下，ISR）内でADC起動・読出を行う方式が用いられてきた．
-本研究室の先行研究では，LPC1768 MCUと外部ADコンバータを用い，この方式でC12880MAから
-\SI{50}{\kilo\hertz}でのデータ取得が報告されている\cite{ref:Kobayashi2021AGV}．
-しかし数\si{\mega\hertz}帯では，\(\mathcal{O}(100\,\mathrm{ns})\)オーダの周期でイベントが到来するため，
-ソフトウェア介在の起動遅延が無視できず，ISR処理時間が主要な性能制約となる．
-したがって，センサ性能を引き出すにはソフトウェア割込みに依存しないハードウェア同期機構が必要である．
+\section{従来方式の課題}
+C12880MAセンサは，入力信号（ST信号）の立ち下がり後にTRG信号を出力し，
+これに同期してビデオ信号（VIDEO信号）を更新する仕様である（Fig.~\ref{fig:c12880ma_timing}）．
+従来の手法では，このTRG信号の立ち上がりを検知して割込みを発生させ，
+その処理ルーチン（ISR）内でADCを起動してデータを読み出していた\cite{ref:Kobayashi2021AGV}．
+しかし，5\si{\mega\hertz}という高速なクロックで動作させる場合，
+TRG信号の周期は\SI{200}{\nano\second}程度と極めて短くなる．
+この時間スケールでは，割込み処理に入るまでの遅延や処理時間のわずかなばらつきが無視できず，
+データの取りこぼしやタイミングのズレが頻発する．
+したがって，センサ本来の性能を引き出すには，
+ソフトウェアによる割込み処理に依存しない，ハードウェアレベルでの同期機構が不可欠である．
 
-従来方式では，C12880MAが出力するTRG周期ごとに割込みを発生させ，
-ISR内でADC起動とデータ読出を実行する構成が一般的である．
-しかしMHz帯ではイベント周期が\SI{200}{\nano\second}オーダとなり，
-割込み遅延およびISR実行時間のばらつきがサンプリング位相へ直接反映されるため，
-取得欠落やタイミングずれが顕在化しやすい．
-そこで本研究では，従来方式（ISR）と提案方式（TIM--ADC--DMA連鎖）における
-データパスの差異を図示し，性能制約の発生要因を明確化する．
-両方式の比較をFig.~\ref{fig:acq_arch_compare}に示す．
+本研究では，従来手法と提案手法におけるデータ処理の流れを比較し，
+性能の制約を明確にする（Fig.~\ref{fig:acq_arch_compare}）．
+従来方式では，TRG信号ごとにCPUが介入する必要があるため，高速動作時にはCPUの処理能力が追いつかなくなる．
+これに対し提案方式では，タイマとDMAを連携させることで，CPUを介さずにADC変換とデータ転送を自動的に行う仕組みを採用した．
 
 
 \begin{figure}[t]
@@ -181,30 +179,29 @@ ISR内でADC起動とデータ読出を実行する構成が一般的である�
   \centering
   \includegraphics[width=0.98\linewidth]{figures/4/c12880ma_pixel_index_mapping.pdf}
   \caption{C12880MA readout rule and pixel index mapping between sensor-side definition and DMA buffer in this work. 
-  The sensor pixel index is defined from the falling edge of ST (\(t=0\)), where pixels \#1--\#88 are dark/invalid and pixels \#89--\#376 are valid (288 pixels). 
-  Due to software start latency, sensor pixels \#1--\#4 are not captured; therefore, the nominal valid start at sensor pixel \#89 appears at DMA buffer sample \#85.}
+  The sensor pixel index is defined from the falling edge of ST (\(t=0\)), where pixels \#1--\#88 are invalid and pixels \#89--\#376 are valid (288 pixels). 
+  Due to software start latency, sensor pixels \#1--\#4 are not captured. therefore, the nominal valid start at sensor pixel \#89 appears at DMA buffer sample \#85.}
   \label{fig:c12880ma_readout_rule}
 \end{figure}
 
+
 Fig.~\ref{fig:c12880ma_readout_rule}に，本研究で用いる画素番号の定義と，
 センサ側インデックスとDMAバッファ上のサンプル番号の対応関係を示す．
-本研究ではST信号の立下りを\(t=0\)とし，ST立下り後の第1画素を\#1として画素番号を定義する．
-データシートの読出規則では，\#1--\#88は無効画素であり，\#89--\#376が有効画素（288画素）である．
-一方，実装ではST立下り後にADC/DMAをソフトウェアで開始するため起動遅延が生じ，
-センサ側の\#1--\#4に相当するサンプルが取得できないことを実測により確認した．
-その結果，有効画素開始（センサ側\#89）はDMAバッファ上では\#85として観測されるため，
-本研究ではDMAバッファの\#85--\#372（288サンプル）を有効分光データとして採用する．
-なお，EOS信号は読出終端タイミングの検証に用い，現実装ではDMA転送は固定長（\(N=387\)）で終了する．
-ここで\(N=387\)は，無効画素区間を含む1フレーム分の総サンプル数である．
+本研究ではST信号の立下りを\(t=0\)とし，その直後の第1画素を\#1と定義する．
+データシート上の仕様では，\#1--\#88は無効画素であり，\#89--\#376 が有効画素である．
 
-\subsection{従来方式の再検証}
-\label{subsec:reconfirm_limit}
-本研究では，内部ADCが比較的高速なSTM32F446REを用いて従来方式の制約を再検証した．
-結果をTable~\ref{tab:previous_method_limit}に示す．
-割込みのみでは\SI{25.4}{\kilo\hertz}付近で欠落が発生し，
-DMAを併用してCPU負荷を低減した場合でも\SI{130}{\kilo\hertz}程度が限界であった．
-以上より，従来方式の主要な性能制約が割込み起動遅延およびISR処理時間に起因することを確認した．
+一方，実装では，ST信号を立ち下げた後にソフトウェアでADCおよびDMAを起動するため，処理遅延が発生する．
+実測の結果，この起動遅延によりセンサ側の \#1--\#4 に相当するデータが取得できていないことが判明した．
+その結果，本来\#89 から始まる有効データは，DMAバッファ上では\#85 の位置に出現する．
+本研究では，この\#85--\#372（計288サンプル）を有効な分光データとして採用する．
+なお，EOS（End of Scan）信号は読み出し終了の確認にのみ使用し，
+DMA転送自体は固定長（\(N=387\)，無効画素を含む1フレーム分で終了させる設計とした．
 
+また，従来方式の限界を確認するため，内部ADCが比較的高速なSTM32F446REを
+用いて検証実験を行った（Table~\ref{tab:previous_method_limit}）．
+割込み処理のみを用いた場合，\SI{25.4}{\kilo\hertz}付近でデータの欠落が発生した．
+DMAを併用してCPU負荷を低減した場合でも，\SI{130}{\kilo\hertz}程度が限界であった．
+この比較実験により，CPUによるソフトウェア処理が，高速化を妨げる主な原因であることを確認した．
 
 \begin{table}[t]
     \centering
@@ -222,41 +219,39 @@ DMAを併用してCPU負荷を低減した場合でも\SI{130}{\kilo\hertz}程�
 
 \section{分光データのハードウェア同期取得アーキテクチャ}
 \label{sec:proposed_chain}
-本研究では，CLKを停止・再開することなく連続供給し，
-ST信号により積分区間を定義した上で，ST立下り後に読出を開始するC12880MAの基本動作に整合する形で取得系を構成した．
-\SI{5}{\mega\hertz}級の周期イベントに対してソフトウェア割込み処理を介在させると，
-起動遅延および処理時間ばらつきが不可避となるため，
-本研究ではTRG同期のハードウェアトリガを用いてADC変換を駆動し，
-DMAにより画素列をストリーミング転送することで，サンプリング位相の決定性を確保する．
+本研究では，\SI{5}{\mega\hertz}級の高速読み出しにおいてサンプリング位相の決定性を確保するため，
+ソフトウェア割込みを介在させないハードウェア同期取得を構築した．
+C12880MAは，CLK信号を連続的に入力し，ST信号によって積分区間を制御する仕様である．
+提案手法では，TRG信号に同期したハードウェアトリガでADC変換を直接駆動し，
+DMAを用いて画素データをス逐次転送する．
 
-\subsection{フレーム取得シーケンス}
+\subsection{取得タイミング設計}
 \label{subsec:acq_sequence}
 1フレームの取得は次の手順で構成される．
-(i) STをHighに設定して積分を開始し，所定の積分時間\(T_{\mathrm{int}}\)を保持する．
+(i) STをHighに設定して積分を開始し，所定の積分時間 \(T_{\mathrm{int}}\) だけ待機する．
 (ii) STをLowへ遷移させて積分を終了し，直後にADCをDMAモードで開始する．
 (iii) 以降はTRG信号の立上りに同期してADC変換が自動的に実行され，DMAによりバッファへ連続転送される．
-(iv) DMA転送完了コールバックによりフレーム完了を検知し，次フレーム準備としてSTをHighへ戻す．
-この構成により，高周波領域においても各サンプルの時刻はTRGにより規定され，
-CPU介在はフレーム境界に限定される．
+(iv) DMA転送完了MCUのcallbackによりフレーム完了を検知し，次フレーム準備としてSTをHighへ戻す．
+この構成により，
+各サンプルの取得タイミングはTRG信号によって規定され，
+CPUの介入はフレームの開始と終了のみに限定される．
 
-\subsection{TIM--ADC--DMAの連携機構}
+\subsection{サンプリング実装}
 \label{subsec:tim_adc_dma_link}
-Fig.~\ref{fig:c12880ma_timing}に示すように，C12880MAはCLKに同期してTRGを生成する．
-本研究では，汎用タイマ（TIM2）のPWM出力によりCLKを生成し，
-別タイマ（TIM15）でTRGエッジを取り込み，そのイベントをADCの外部トリガとして用いる．
-ADCは外部トリガ入力により変換を開始し，変換結果はDMAによりメモリへ逐次転送されるため，
-TRG周期に同期した一様なサンプリングがCPUの介在なしに実行される．
+Fig.~\ref{fig:c12880ma_timing}に示した通り，
+C12880MAは入力されるCLK信号に同期してTRG信号を出力する．
+本実装では，汎用タイマ（TIM2）のPWM出力機能を用いてセンサへのCLK信号を生成する．
+さらに，別のタイマ（TIM15）を用いてTRG信号のエッジを検出し，そのイベントをADCの外部トリガとして接続した．
+これにより，TRG信号の周期に同期した正確なサンプリングが，CPUの処理状況に依存せず実行される．
 
-\subsection{ST立下り後の開始遅延と有効画素範囲の補正}
+\subsection{有効画素範囲の補正}
 \label{subsec:effective_pixel_window}
-C12880MAのデータシートでは，ST立下り後の所定回数のTRGを経てVIDEOが有効化される．
-一方，本実装ではST立下り後にADC/DMAを開始するため，
-ST遷移からDMA開始までのソフトウェア起動遅延が，画素列上の開始位置に固定オフセットとして現れる．
-
-本研究環境では，このオフセットはTRG周期換算で約4画素分に相当することが実測により一貫して確認された．
-そのため，DMAバッファ上で有効画素が安定して出現する位置は理論値（89番目）ではなく，
-およそ85番目付近となる．本研究ではこの挙動を系統的な固定遅延として扱い，
-先頭85画素を無効画素として除外することで，有効スペクトルデータを安定に抽出した．
+前述の通り，本実装ではST信号の立ち下がり後にソフトウェアでADCとDMAを開始するため，わずかな起動遅延が生じる．
+この遅延は，取得される画素列の開始位置における固定のオフセットとして現れる．
+実測の結果，このオフセットはTRG周期換算で約4画素分（\#1--\#4）であることが確認された．
+したがって，DMAバッファ上では本来89番目にあるはずの有効画素の先頭が，85番目付近に出現する．
+本研究ではこの挙動を固定遅延として扱い，
+バッファの先頭85画素分を無効データとして除外することで，有効なスペクトルデータを安定して抽出した．
 
 % \subsection{論理ゲートによる完全同期への拡張}
 % \label{subsec:and_gate_future}
@@ -271,63 +266,28 @@ ST遷移からDMA開始までのソフトウェア起動遅延が，画素列上
 % ハードウェアゲーティングにより，フレーム開始位置を完全に決定論的に固定できる．
 % 本研究は現段階でこの拡張を要さないが，システム統合要件の変化に応じて導入可能である．
 
-
-\section{実装}
-\label{sec:implementation_points}
-本節では，提案アーキテクチャをMCU上で安定動作させるための実装要点を述べる．
-
-\subsection{ハードウェアトリガ連鎖}
-\label{subsec:hw_trigger_chain}
-ADCは外部トリガ入力により変換を開始し，変換結果をDMAでメモリへ連続転送する．
-本システムでは，TIM2のPWMによりC12880MAへCLKを供給し，
-TRGはTIM15でエッジ同期イベントとして取得した上で，ADC外部トリガへ接続する．
-このとき，ADCの変換開始はTRGエッジにより駆動されるため，
-CPUが周期ごとにADCを起動する必要がなく，\SI{5}{\mega\hertz}級の高頻度でもサンプリング位相の決定性を維持できる．
-
-また，DMAは各変換結果を逐次バッファへ転送し，フレーム終端はDMA転送完了で検知する．
-これにより，CPU介在はフレーム境界に限定され，
-周期イベントごとのISR負荷が性能制約となる問題を本質的に回避できる．
-
-\subsection{STM32H7におけるキャッシュ整合性対策}
-\label{subsec:cache_coherency}
-STM32H7シリーズではデータキャッシュによりDMA転送データの可視性が損なわれる場合がある．
-本研究ではDMA転送先バッファをDTCM（Data Tightly Coupled Memory）領域へ配置し，
-キャッシュの影響を受けないメモリによりデータ整合性を確保した．
-% 併せて，必要に応じてキャッシュ無効化またはキャッシュクリーン／インバリデートを実施し，
-% 連続取得時の欠落・破損を抑制した．
-
-\section{性能検証}
+\section{評価}
 \label{sec:performance_eval}
-本節では，提案アーキテクチャが高速取得を実現していることを，
-(i) 信号タイミングの実測，(ii) 連続取得時のデータ完全性，(iii) スペクトルの再現性，
-の3観点から検証する．
-なお，本実験に用いたSTM32 NUCLEO-H723ZG開発ボードとセンサユニットの
-接続インタフェース詳細については付録を参照する．
 
+本節では，提案アーキテクチャが安定したデータ取得を実現していることを検証する．
+具体的には，まずオシロスコープを用いた信号タイミングの実測を行い，ハードウェアレベルでの同期動作を確認する．
+次に，連続取得時におけるデータの完全性，すなわちデータの欠落やズレがないかを検証する．
+最後に，既知の光源を用いたスペクトルの再現性を評価する．
+なお，本実験で使用したSTM32 NUCLEO-H723ZG開発ボードとセンサユニットの接続構成をFig.~\ref{fig:eval_setup_h723} に示す．
 
-\subsection{STM32F446REでのアーキテクチャ検証}
-従来方式では\SI{130}{\kilo\hertz}が限界であったSTM32F446REに提案アーキテクチャを実装したところ，
-\SI{0.5}{\mega\hertz}および\SI{1}{\mega\hertz}での安定取得を確認した．
-これにより，従来方式の主要制約が割込み起動遅延に起因していたこと，
-および提案アーキテクチャがその解消に有効であることが示された．
-なお，本MCUに搭載されるADCの仕様により，達成可能な最大周波数は理論上\SI{1.5}{\mega\hertz}程度に制限される．
-
-\subsection{STM32H723ZGでの\protect\SI{5}{\mega\hertz}高速取得}
+\subsection{高速動作の検証}
 \label{subsec:eval_h7}
-最大\SI{5}{\mega\hertz}級のサンプリングを実現するため，STM32H723ZGに同アーキテクチャを実装した．
-前述のキャッシュ・コヒーレンシ対策としてDMAバッファをDTCMへ配置し，
-ADCのハードウェアキャリブレーションおよびトリガ設定を最適化した．
-その結果，\SI{5}{\mega\hertz}での連続取得に成功した．
+本研究では最大 \SI{5}{\mega\hertz} のサンプリング速度を実現するため，STM32H723ZGに提案アーキテクチャを実装した．
+STM32H7シリーズではデータキャッシュが有効に機能するため，
+DMAがメモリに書き込んだ最新データをCPUが即座に読み出せないキャッシュ・コヒーレンシの問題が発生する場合がある．
+そこで本実装では，DMA の転送先バッファをキャッシュの影響を受けないDTCM（Data Tightly Coupled Memory）領域に配置することで，
+データの整合性を確保した．
+加えて，ADCのハードウェアキャリブレーションとトリガ設定を最適化することで，目標とする\SI{5}{\mega\hertz}での連続取得に成功した．
 
-\subsection{オシロスコープによる\protect\SI{5}{\mega\hertz}動作確認}
-\label{subsec:timing_scope_screenshot}
-
-Fig.~\ref{fig:scope_clk_trg_video_eos}に，\SI{5}{\mega\hertz}動作時のオシロスコープ画面を示す．
-CH1をTRG信号，CH2をCLK信号，CH4をVIDEO信号，CH3をEOS信号とする．
-なおスクリーンショットではTRGおよびCLKの振幅が実際より小さく表示されているが，
-これはプローブ減衰設定とスケール設定の不整合に起因する表示上の問題であり，
-本図は主としてタイミング関係の確認に用いる．
-強光照射時と遮光時を比較すると，EOS近傍でVIDEO出力が停止する挙動が確認できる．
+Fig.~\ref{fig:scope_clk_trg_video_eos}に，\SI{5}{\mega\hertz}動作時におけるオシロスコープの計測画面を示す．
+ここではCH1をTRG信号，CH2をCLK信号，CH3をEOS信号，CH4をVIDEO信号としている．
+波形を確認すると，TRG の立ち上がりに同期して VIDEO信号が遷移している様子や，
+EOS信号の発生付近でデータ出力が停止する正常な挙動が確認できる．
 
 \begin{figure}[t]
   \centering
@@ -345,28 +305,27 @@ CH1をTRG信号，CH2をCLK信号，CH4をVIDEO信号，CH3をEOS信号とする
     \label{fig:eos_dark}
   \end{subfigure}
   
-  \caption{Oscilloscope screenshots of the End-of-Scan (EOS) timing at \SI{5}{\mega\hertz}. 
-  (a) Under strong illumination, VIDEO (green) drops before EOS (blue) rises. 
-  (b) In dark condition. 
-  Note: Yellow: TRG, Magenta: CLK. The displayed amplitudes of CLK/TRG are compressed due to probe scaling, but the timing relationship is preserved.}
+  \caption{Oscilloscope screenshots of the End-of-Scan (EOS) timing at 5~MHz.
+(a) Strong illumination.
+(b) Dark condition.
+Yellow: TRG, magenta: CLK.}
   \label{fig:scope_clk_trg_video_eos}
 \end{figure}
 
-\subsection{CSVに基づくEOS／ST／VIDEO波形の再構成}
-\label{subsec:timing_csv_plots}
-オシロスコープから保存したCSVデータを用い，制御信号（EOS, ST）と出力信号（VIDEO）の関係を再描画した．
+\subsection{取得データの妥当性確認}
+オシロスコープから保存したCSVデータを用い，EOS信号, ST信号とVIDEO信号の関係をグラフとしてプロットした．
 
-まず，Fig.~\ref{fig:eos_video_high_low}にEOSとVIDEOの同時波形を示す．
-強光照射時（(a)）と遮光時（(b)）のいずれにおいても，
-EOS信号の立ち上がりエッジに同期してVIDEO出力が停止（ベースラインへ復帰）しており，
-ゲートロジックによる読出停止が機能していることを確認した．
+まず，Fig.~\ref{fig:eos_video_high_low}にEOS信号とVIDEO信号の波形を示す．
+強い光を当てた場合（Fig.~\ref{fig:eos_video_high_low}(a)）と遮光した場合（Fig.~\ref{fig:eos_video_high_low}(b)）のいずれにおいても，
+EOS信号の立ち上がりに同期してVIDEO出力が停止している．
+これにより，ゲートロジックによる読み出し停止機能が正しく動作していることを確認した．
 
 次に，様々な照明環境および光源距離におけるST信号とVIDEO信号の応答特性をFig.~\ref{fig:st_video_combined_conditions}に示す．
-Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件ではベースラインノイズのみが観測され，
-同(b)の自然光下では光源のスペクトルピークが明瞭に捉えられている．
-また，光源距離を変化させた同(c)（\SI{5}{cm}，強光相当）および同(d)（\SI{25}{cm}，弱光相当）を比較すると，
-光量に応じてVIDEO信号の振幅が適切に変化しており，
-本システムが広いダイナミックレンジで線形応答性を維持していることが確認された．
+Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件ではノイズのみが観測されているのに対し，
+同(b)の自然光下では光源のスペクトルピークが捉えられている．
+また，光源との距離を変えた同(c)および同(d)を比較すると，
+光量に応じて VIDEO 信号の振幅が適切に変化している．
+この結果から，光量に対する応答性を維持していることが確認された．
 
 \begin{figure}[h]
   \centering
@@ -383,11 +342,9 @@ Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件ではベースラ�
     \caption{Dark condition}
     \label{fig:eos_low}
   \end{subfigure}
-  
-  \caption{Replotted waveforms from CSV (EOS and VIDEO) at \SI{5}{\mega\hertz}. 
-  (a) Under strong illumination. 
-  (b) Under dark condition. 
-  In both cases, the VIDEO output (red) becomes inactive precisely at the rising edge of the EOS event (green), verifying the readout termination logic.}
+  \caption{Replotted EOS (green) and VIDEO (red) waveforms from CSV data at 5~MHz.
+          (a) Strong illumination.
+          (b) Dark condition.}
   \label{fig:eos_video_high_low}
 \end{figure}
 
@@ -425,31 +382,30 @@ Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件ではベースラ�
     \label{fig:cond_25cm}
   \end{subfigure}
   
-  \caption{ST and VIDEO signal waveforms under different lighting and distance conditions. 
-  (a) Dark condition showing baseline noise. 
-  (b) Natural light showing spectral peaks. 
-  (c) High intensity at \SI{5}{\cm} distance (equivalent to strong illumination). 
-  (d) Low intensity at \SI{25}{\cm} distance. 
-  The results confirm the system's ability to capture spectral features and its dynamic response to varying light intensities.}
+  \caption{ST and VIDEO signal waveforms under different illumination conditions.
+          (a) Dark condition.
+          (b) Natural light.
+          (c) Strong illumination at 5~cm.
+          (d) Low illumination at 25~cm.} 
   \label{fig:st_video_combined_conditions}
 \end{figure}
 
-\subsection{サンプリングレート成立性の検討}
-\label{subsec:adc_feasibility}
-センサに供給するクロックが\SI{5}{\mega\hertz}であるため，更新周期は
-\[
-T_{\mathrm{period}}=\frac{1}{\SI{5}{\mega\hertz}}=\SI{200}{\nano\second}
-\]
-となる．データシートによればVIDEO信号が安定しているのはTRG信号の立上りエッジを中心とした半周期程度であるため，
-サンプリング可能時間幅は概ね\(\SI{100}{\nano\second}\)となる．
-本研究ではサンプリング時間\(\SI{2.5}{}\)サイクル，変換時間\(\SI{12.5}{}\)サイクル（12-bit）とし合計15サイクルを要するため，
-必要なADCクロック周波数\(f_{\mathrm{ADCK}}\)は
-\begin{equation}
-  f_{\mathrm{ADCK}} > \frac{15}{\SI{200}{\nano\second}} = \SI{75}{\mega\hertz}
-\end{equation}
-となる．STM32H723ZGのデータシートにおいて12-bit ADCの最大クロック周波数が\SI{75}{\mega\hertz}と規定されていることから，
-設定が理論上成立する．実測により本条件で安定動作することを確認した．
-
+% \subsection{サンプリングレート成立性の検討}
+% \label{subsec:adc_feasibility}
+% センサに供給するCLK信号が\SI{5}{\mega\hertz}であるため，1画素あたりの更新周期は
+% \[
+% T_{\mathrm{period}}=\frac{1}{\SI{5}{\mega\hertz}}=\SI{200}{\nano\second}
+% \]
+% となる．データシートによれば，VIDEO 信号が安定しているのはTRG信号の立ち上がりを中心とした半周期程度であるため，
+% ADCによるサンプリングが可能な時間幅は概ね\(\SI{100}{\nano\second}\)に制限される．
+% 本実装ではサンプリング時間に\(\SI{2.5}{}\)サイクル，変換時間に\(\SI{12.5}{}\)サイクル（12-bit分解能）を設定しており，合計で15サイクルを要する．
+% したがって，必要な ADC クロック周波数 \(f_{\mathrm{ADCK}}\) は以下のように求められる．
+% \begin{equation}
+%   f_{\mathrm{ADCK}} > \frac{15}{\SI{200}{\nano\second}} = \SI{75}{\mega\hertz}
+% \end{equation}
+% STM32H723ZGのデータシートにおいて，12-bit　ADCの最大クロック周波数は \SI{75}{\mega\hertz} と規定されている．
+% これにより，本研究の設定がハードウェアの仕様範囲内で成立していることを確認した．
+% 実測においても，この条件下で安定してデータが取得できている
 
 \begin{table}[!tbp]
   \centering
@@ -471,9 +427,9 @@ T_{\mathrm{period}}=\frac{1}{\SI{5}{\mega\hertz}}=\SI{200}{\nano\second}
 \section{その他センサのデータ取得と統合}
 \label{sec:other_sensors}
 分光データと同時に，生育環境の基礎量として温度・湿度・気圧および\(\mathrm{CO_2}\)濃度を取得するため，
-BME280およびS300L-3Vを併用した．これら環境センサの取得処理そのものは先行研究で確立された実装に基づくが，
+BME280およびS300L-3Vをシステムに統合した．これら環境センサの取得処理そのものは先行研究で確立された実装に基づくが，
 本研究ではセンサユニットのMCUをSTM32へ変更したことに伴い，
-デバイスドライバおよび周辺制御（I\(^2\)C設定，割込み・DMA設定，タイマによる周期実行）を再設計し，
+デバイスドライバおよび制御を再設計し，
 既存処理をSTM32環境へポーティングした．具体的には，S300L-3VやBME280はI\(^2\)C通信により所定周期で計測する．
 各計測値にはMCU内の単調増加タイムスタンプを付与し，
 分光フレームと同一の時刻系でログ化することで，走行中の計測データとして統合可能とした．
@@ -483,13 +439,12 @@ BME280およびS300L-3Vを併用した．これら環境センサの取得処理
 \section{まとめ}
 \label{sec:sensor_unit_summary}
 本章では，C12880MAを用いた高速分光センシングの実現に向け，
-割込み駆動方式の制約を再現的に示した上で，
-連続CLK下でのST制御とTRG同期ハードウェアトリガに基づくADC/DMAストリーミング取得を構築した．
-さらに，ST立下り後のADC/DMA開始に伴う画素レベルの開始オフセットを実測により定量化し，
-有効画素範囲の補正として取り込むことで，高速取得時のスペクトル整合性を確保した．
-STM32H723ZGに実装し，\SI{5}{\mega\hertz}での安定取得をオシロスコープおよびCSV再描画により検証した．
-% また，将来的に割り込み負荷が増大して遅延が非定常化する場合には，
-% 論理ゲートによるハードウェアゲーティングへ拡張することでフレーム開始位置を決定論的に固定できることを示した．
-次章では，本センサユニットにより取得したデータを用いた環境マッピングおよび統合評価について述べる．
+ハードウェア同期に基づくデータ取得システムを構築した．
+まず，従来の割込み駆動方式では高速化に限界があることを実験により示した．
+その上で，タイマとDMAを連携させ，CPU を介さずに連続的に画素データを取得するアーキテクチャを提案した．
+また，読み出し開始時の遅延によって生じる画素ズレを定量化し，有効画素範囲を補正することで，正確なスペクトル計測を可能にした．
+最後STM32H723ZGに実装し，\SI{5}{\mega\hertz}での安定した連続取得を実証した．
+
+次章では，本センサユニットを用いて取得したデータに基づき，環境マッピングおよびその評価を行った結果について述べる．
 
 \end{document}
