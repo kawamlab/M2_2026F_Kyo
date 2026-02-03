@@ -103,7 +103,7 @@ ROS~2はDDSに基づく通信機構を備え，分散処理，実運用におけ
 
 \subsubsection{Navigation2}
 \label{subsubsec:navigation}
-自動走行モジュールとしてROS~2のNavigation2（Nav2）を用いる．
+自動走行アプリケーションとしてROS~2のNavigation2（Nav2）を用いる．
 Nav2は，グローバル経路計画（Global Planner），ローカルプランニング／追従制御（Local Controller），
 およびBehavior Treeによるタスク実行を統合的に提供するナビゲーションフレームワークである．
 本システムでは，RTAB-Mapが提供する\texttt{map}座標系での自己位置推定結果に基づいて経路計画を行い，
@@ -238,6 +238,17 @@ NLOSなどによって生じる大きな位置誤差を検知するための仕�
 過去数サンプルの中央値を利用し，一定回数以上連続して閾値を超えるとなった場合のみ，
 遮断を維持する仕組みとした．
 
+閾値$\gamma$の設定について．
+本手法ではマハラノビス距離を用いており，誤差が正規分布に従うと仮定すれば，
+距離$d(t)$は自由度$k$のカイ二乗分布$\chi^2_k$に従う．
+有意水準99.7\%を満たす値を基準とすることができる．
+
+しかし，実際のハウス環境では，機体の振動や路面の凹凸により，
+LIOの共分散に含まれない突発的なノイズが生じる．
+そのため，理論値だけで判定すると，正常なデータまで過剰に遮断してしまう恐れがある．
+そこで本実験では，事前に取得した静止時および正常走行時のデータセットに基づき，
+誤検知が発生しないラインを特定し，理論値に実験的なマージンを加えた値を閾値として固定した．
+
 \subsection{外れ値発生直後の入力防止}
 \label{subsec:first_frame_block}
 増分整合性検定は，過去のデータや履歴を利用するため，
@@ -248,11 +259,11 @@ NLOSなどによって生じる大きな位置誤差を検知するための仕�
 
 1つ目はGNSSが極端に小さい共分散を報告している場合に，
 増分残差の大きさ$\|\bm{r}(t)\|$がわずかな閾値$r_{\mathrm{tw}}$を超えた瞬間に，
-そのデータを遮断と判定する仕組みです．このルールにより，
+そのデータを遮断と判定する仕組みである．このルールにより，
 高い精度を装いつつ実際には大きな偏りを持つNLOSのデータを，
 排除することが可能になる．
 
-2つ目は1サンプル遅延による出力制御です．
+2つ目は1サンプル遅延による出力制御である．
 時刻$t$におけるGNSSデータはすぐにRTAB-Mapへ渡さず，
 一旦バッファに保持する．次のサンプルが得られた時点での判定結果が遮断であれば，
 バッファしていた時刻$t$のデータも破棄する．
@@ -388,17 +399,78 @@ RTAB-Mapのパラメータ設定も統一した．
 
 \subsection{評価指標}
 \label{subsec:metrics}
-本評価は実環境で取得した走行データに基づいて行うため，
-地図整合性および推定の破綻有無を中心に定性的評価を行う．具体的には，
-(i) 点群地図の幾何的一貫性，
-(ii) 推定軌跡の連続性と不自然な折れ曲がり，
-(iii) NLOS測位異常が疑われる区間における推定の破綻・回復挙動，
-を比較する．
-また，提案法については遮断判定のタイミングが異常区間と整合することを，
-NISと判定の時系列により確認する．
+本実験を行う農業用ハウス環境では，
+走行軌跡を高精度な計測器による真値の取得が困難である．
+また，RTK-GNSS自体が不安定であるため，
+GNSSを正解として使うこともできない．
+そこで本研究では，地図や軌跡の整合性に着目して定性的な評価を行う．
+
+評価の観点は以下の3点である．
+第1に点群地図の重なりを確認する．同じ場所を何度も通ったときに，
+壁や柱が二重になっていないかを見ることで，地図の正しさを判断する．
+第2に軌跡の滑らかさを確認する．ロボットの動きとしてあり得ない急激な位置の飛びがないかを確認する．
+第3に復帰時の挙動を確認する．GNSSが不安定な状態から回復したときに，
+地図が壊れずに維持できているかを確認する．
+また，提案手法の動作確認として，システムがデータを遮断
+したタイミングが適切かどうかも併せて確認する．
+
+\subsection{走行軌跡の比較}
+\label{subsec:traj_compare}
+
+提案手法と従来手法（品質監視なし）の差を示すため，
+RTAB-Mapが出力する\texttt{map}座標系の走行軌跡を比較した．
+なお，両軌跡は走行開始直後の短時間区間を基準として位置・方位を整列し，
+形状差が視覚的に比較できるようにした．
+
+\begin{figure}[htbp]
+    \centering
+    \begin{minipage}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/3/traj_global.png}
+        \caption{Comparison of trajectories between the proposed method and the naive method.}
+        \label{fig:traj_global}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/3/traj_zoom_A.png}
+        \caption{Zoom-in view around point A (NLOS-affected segment) in Fig.~\ref{fig:traj_global}.}
+        \label{fig:traj_zoom_A}
+    \end{minipage}
+\end{figure}
+
+
+Fig.~\ref{fig:traj_global}より，全体としては両手法で類似した軌跡が得られている一方で，
+特定区間において従来手法の軌跡が局所的に逸脱していることが分かる．
+Fig.~\ref{fig:traj_zoom_A}は，差が最も顕著であった区間Aの拡大図である．
+AはGNSSのNLOS影響が疑われる区間であり，
+従来手法では品質低下したGNSS観測が拘束として混入することで，
+軌跡の逸脱が生じたと考えられる．
+一方，提案手法ではGNSS観測を品質監視により遮断し，
+同区間における推定の安定化を確認した．
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=\linewidth]{figures/3/traj_error.png}
+  \caption{Time history of the trajectory separation between the proposed and naive methods.}
+  \label{fig:traj_error}
+\end{figure}
+
+なお，ハウス間の通路のように周囲構造が少ない区間では，
+LiDAR点群が疎になりやすく，Fig.~\ref{fig:traj_global}のBに示すように，
+LIOが縮退して不安定となる場合がある．
+この現象はGNSSのNLOS影響とは別の要因で生じるため，
+本研究ではAに示すNLOS影響が疑われる区間を主な比較対象として示した．
+
 
 \subsection{評価結果と考察}
 \label{subsec:real_world_results}
+
+
+前節では，提案手法と従来手法（品質監視なし）の走行軌跡を比較し，
+Fig.~\ref{fig:traj_global}～Fig.~\ref{fig:traj_error}では差が顕著に現れる区間を拡大して示す．
+次に，点群地図の比較により，誤った拘束の混入が地図に与える影響を確認する．
+
 2025年10月23日の走行データを用いた各手法の点群地図と推定軌跡の
 比較をFig.~\ref{fig:map_comparison_4panel}に示す（白：点群地図，黄：推定軌跡）．
 単純統合では，地図全体を俯瞰すると後続の最適化によって整合しているように見える場合があるが，
