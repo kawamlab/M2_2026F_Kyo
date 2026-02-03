@@ -48,6 +48,12 @@ NIR帯域（近赤外）とRed帯域（赤）の正規化差分（ND），
 走行軌跡上に配置し，空間的な分布として可視化した．
 
 \subsection{スペクトル特徴による植生・非植生の識別可能性}
+本研究で用いる分光特徴量は，センサが観測した反射スペクトルに基づく相対的な指標であり，
+観測方向や対象面の姿勢，照明条件の影響を受ける．
+そのため，気温のような地点固有の状態量を直接表すものではない．
+本章では，同一走行条件下で取得した観測量として扱い，空間的な変化傾向を可視化することを目的とする．
+
+
 288のデータから計算した各特徴量のマップをFig.~\ref{fig:spec_feature_maps}に示す．
 NDやスペクトルの傾きが最大となる波長は植物の特徴を強く反映する指標であるため，
 マップ上においても植生があるエリアとないエリアの違いがある程度明確に確認できた．
@@ -148,7 +154,8 @@ NDやスペクトルの傾きが最大となる波長は植物の特徴を強く
             (a) ND(NIR, Red) map.
             (b) Spectral centroid map.
             (c) Red-edge position map.
-            (d) SAM similarity map.}
+            (d) SAM similarity map.
+            These maps visualize relative variations of observations acquired along the trajectory.}
   \label{fig:spec_feature_maps}
 \end{figure}
 
@@ -173,7 +180,8 @@ The map is shown as an exploratory visualization along the trajectory.}
 本実験環境には真値が存在しないため，絶対精度の定量評価は困難である．
 しかし，第3章のFig.~\ref{fig:map_comparison_4panel}で示したように，
 外れ値による地図の破壊が防げている．
-したがって，LIOが数十cm程度の相対精度は維持されていると判断できる．
+したがって，地図の不連続な破壊が生じていないこと，および走行軌跡が連続に得られていることから，
+LIOが少なくとも大きな破綻のない相対精度を維持していると判断できる．
 
 ここで，位置誤差が生育環境マップに与える影響を考える．
 ハウス内の温度，湿度，CO$_2$濃度といった環境データは，数cm単位で激変するものではなく，
@@ -184,8 +192,8 @@ The map is shown as an exploratory visualization along the trajectory.}
 
 また，分光データ（Fig.~\ref{fig:spec_feature_maps}）では，
 正規化差分などの特徴量を用いることで，植生の有無を反映したマップが得られた．
-特に，NDが高い値を示したエリアは，実際に作物が植えられている場所と空間的に一致している．
-このことから，提案システムは単なる数値の羅列ではなく，
-実際の環境特性を正しく捉えているといえる．
+特に，NDが高い値を示した区間は，走行経路上の植生が存在する領域に対応していると考えられる．
+このことから，提案システムは走行中に取得した観測データを空間分布として整理し，
+圃場内の相対的な特徴の違いを可視化できているといえる．
 
 \end{document}

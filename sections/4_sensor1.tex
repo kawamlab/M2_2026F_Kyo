@@ -314,19 +314,29 @@ Yellow: TRG, magenta: CLK.}
 \end{figure}
 
 \subsection{取得データの妥当性確認}
-オシロスコープから保存したCSVデータを用い，EOS信号, ST信号とVIDEO信号の関係をグラフとしてプロットした．
+本節では，高速分光センシングシステムにおいて取得される信号が，
+意図したタイミング制御および読み出し制御に従って動作しているかを確認することを目的とする．
+オシロスコープから保存した CSV データを用い，
+EOS 信号，ST 信号および VIDEO 信号の関係をグラフとしてプロットした．
 
-まず，Fig.~\ref{fig:eos_video_high_low}にEOS信号とVIDEO信号の波形を示す．
-強い光を当てた場合（Fig.~\ref{fig:eos_video_high_low}(a)）と遮光した場合（Fig.~\ref{fig:eos_video_high_low}(b)）のいずれにおいても，
+まず，Fig.~\ref{fig:eos_video_high_low} に EOS 信号と VIDEO 信号の波形を示す．
+本実験では，光源とセンサ間の配置を一定とし，照明条件のみを変化させた．
+強い光を当てた場合（Fig.~\ref{fig:eos_video_high_low}(a)）と
+遮光した場合（Fig.~\ref{fig:eos_video_high_low}(b)）のいずれにおいても，
 EOS信号の立ち上がりに同期してVIDEO出力が停止している．
-これにより，ゲートロジックによる読み出し停止機能が正しく動作していることを確認した．
+これにより，ゲートロジックによる読み出し停止機能が
+外部環境光条件によらず正しく動作していることを確認した．
 
-次に，様々な照明環境および光源距離におけるST信号とVIDEO信号の応答特性をFig.~\ref{fig:st_video_combined_conditions}に示す．
-Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件ではノイズのみが観測されているのに対し，
-同(b)の自然光下では光源のスペクトルピークが捉えられている．
+次に，様々な照明環境および光源距離における
+ST信号とVIDEO 信号の応答特性を
+Fig.~\ref{fig:st_video_combined_conditions}に示す．
+Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件では
+ノイズ成分のみが観測されているのに対し，
+同(b)の自然光下では光源に対応したスペクトルピークが捉えられている．
 また，光源との距離を変えた同(c)および同(d)を比較すると，
-光量に応じて VIDEO 信号の振幅が適切に変化している．
-この結果から，光量に対する応答性を維持していることが確認された．
+光量に応じてVIDEO 信号の振幅が変化しており，
+本システムが光量変化に対する基本的な応答性を有していることが分かる．
+
 
 \begin{figure}[h]
   \centering
