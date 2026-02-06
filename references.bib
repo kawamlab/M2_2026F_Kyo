@@ -1,6 +1,6 @@
 @misc{ref:maff_whitepaper_r6_section3,
   author       = {農林水産省},
-  title        = {令和6年度 食料・農業・農村白書 第3節 担い手の育成・確保と多様な農業者による農業生産活動（図表2-3-2を含む）},
+  title        = {令和6年度 食料・農業・農村白書 第3節 担い手の育成・確保と多様な農業者による農業生産活動},
   howpublished = {\url{https://www.maff.go.jp/j/wpaper/w_maff/r6/r6_h/trend/part1/chap3/c3_3_00.html}},
   year         = {2025},
   note         = {(Accessed on 2026/01/25)}
@@ -8,7 +8,7 @@
 
 @misc{ref:maff_smart_meguji_2025,
   author       = {農林水産省},
-  title        = {スマート農業をめぐる情勢について（2025年12月）},
+  title        = {スマート農業をめぐる情勢について},
   howpublished = {\url{https://www.maff.go.jp/j/kanbo/smart/smart_meguji.pdf}},
   year         = {2025},
   note         = {(Accessed on 2026/01/25)}
@@ -40,13 +40,12 @@
   pages     = {1P1-K04}
 }
 
-@article{ref:loam,
-  title={LOAM: Lidar Odometry and Mapping in Real-time},
-  author={Zhang, Ji and Singh, Sanjiv},
-  journal={Robotics: Science and Systems},
-  volume={2},
-  number={9},
-  year={2014}
+@conference{ref:loam,
+author = {Ji Zhang and Sanjiv Singh},
+title = {LOAM: Lidar Odometry and Mapping in Real-time},
+booktitle = {Proceedings of Robotics: Science and Systems (RSS '14)},
+year = {2014},
+month = {July},
 }
 
 @inproceedings{ref:lego_loam,
@@ -59,21 +58,22 @@
 
 @inproceedings{ref:lio_sam,
   title={LIO-SAM: Tightly-coupled Lidar Inertial Odometry via Smoothing and Mapping},
-  author={Shan, Tixiao and others},
+  author={Shan, Tixiao and Englot, Brendan and Meyers, Drew and Wang, Wei and Ratti, Carlo and Rus Daniela},
   booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-  pages={5135--5142},
-  year={2020}
+  pages={5135-5142},
+  year={2020},
+  organization={IEEE}
 }
 
-@article{ref:fast_lio2,
-  title={FAST-LIO2: Fast Direct LiDAR-inertial Odometry},
-  author={Xu, Wei and Cai, Yixi},
-  journal={IEEE Transactions on Robotics},
+@ARTICLE{ref:fast_lio2,
+  author={Xu, Wei and Cai, Yixi and He, Dongjiao and Lin, Jiarong and Zhang, Fu},
+  journal={IEEE Transactions on Robotics}, 
+  title={FAST-LIO2: Fast Direct LiDAR-Inertial Odometry}, 
+  year={2022},
   volume={38},
   number={4},
-  pages={2053--2073},
-  year={2022}
-}
+  pages={2053-2073},
+  doi={10.1109/TRO.2022.3141876}}
 
 @article{ref:2018rtabmap,
   title={{RTAB-Map as an Open-Source Lidar and Visual SLAM Library for Large-Scale and Long-Term Online Operation}},
@@ -86,16 +86,6 @@
   doi={10.1002/rob.21831},
   eprint={1809.05952},
   url={https://onlinelibrary.wiley.com/doi/abs/10.1002/rob.21831}
-}
-
-@article{ref:greenhouse_lio,
-  title={Real-Time Localization and Mapping Utilizing Multi-Sensor Fusion for Agricultural Robots in Greenhouse Environments},
-  author={Zhang, Y. and others},
-  journal={Agronomy},
-  volume={12},
-  number={8},
-  pages={1740},
-  year={2022}
 }
 
 @article{ref:gnss_fusion_review,
@@ -113,6 +103,7 @@
   year={2022}
 }
 
+
 @INPROCEEDINGS{6385590,
   author={Sünderhauf, Niko and Protzel, Peter},
   booktitle={2012 IEEE/RSJ International Conference on Intelligent Robots and Systems}, 
@@ -125,21 +116,36 @@
   doi={10.1109/IROS.2012.6385590}
 }
 
+
 @article{ref:mobile_sensing_review,
-  title={A Review of Smart Greenhouse Farming by Using Sensor Network Technology},
-  author={Ray, P.P.},
-  journal={IEEE Internet of Things Journal},
-  volume={4},
-  number={5},
-  year={2017}
+author = {Ray, Partha Pratim},
+title = {Internet of things for smart agriculture: Technologies, practices and future direction},
+year = {2017},
+issue_date = {2017},
+publisher = {IOS Press},
+address = {NLD},
+volume = {9},
+number = {4},
+issn = {1876-1364},
+url = {https://doi.org/10.3233/AIS-170440},
+doi = {10.3233/AIS-170440},
+journal = {J. Ambient Intell. Smart Environ.},
+month = jan,
+pages = {395–420},
+numpages = {26},
+keywords = {precision agriculture, smart agriculture, Internet of things}
 }
 
-@article{ref:drone_spectral,
-  title={A Small Flying IoT Node for Real-Time Spectral Monitoring in Smart Agriculture},
-  author={Tim, C. and others},
-  journal={IEEE Internet of Things Journal},
-  year={2023}
-}
+@INPROCEEDINGS{ref:spectral,
+  author={Mächler, Tobias and Müller, Hanna and Wiese, Philip and Magno, Michele and Kartsch, Victor and Benini, Luca},
+  booktitle={2025 IEEE Sensors Applications Symposium (SAS)}, 
+  title={A Small Flying IoT Node for Real-Time Spectral Monitoring in Smart Agriculture}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-6},
+  keywords={Smart agriculture;Image color analysis;Green products;Greenhouses;Robot sensing systems;Real-time systems;Internet of Things;Monitoring;Photonics;Drones},
+  doi={10.1109/SAS65169.2025.11105142}}
 
 @misc{ref:hamamatsu_c13016,
   author       = {Hamamatsu Photonics K.K.},
@@ -203,38 +209,53 @@
   url = {https://geographiclib.sourceforge.io/C++/2.7}
 }
 
-@article{Wen2022LidarAidedNLOS,
-  author  = {Wen, Weisong and Hsu, Li-Ta},
-  title   = {3D {LiDAR} Aided {GNSS} {NLOS} Mitigation in Urban Canyons},
-  journal = {IEEE Transactions on Intelligent Transportation Systems},
-  year    = {2022},
-  volume  = {23},
-  number  = {6},
-  pages   = {5723--5734},
-  doi     = {10.1109/TITS.2021.3055629}
+@ARTICLE{Wen2022LidarAidedNLOS,
+  author={Wen, Weisong Weisong and Hsu, Li-Ta},
+  journal={IEEE Transactions on Intelligent Transportation Systems}, 
+  title={3D LiDAR Aided GNSS NLOS Mitigation in Urban Canyons}, 
+  year={2022},
+  volume={23},
+  number={10},
+  pages={18224-18236},
+  doi={10.1109/TITS.2022.3167710}}
+
+
+@article{Groves2011ShadowMatching, 
+  title={Shadow Matching: A New GNSS Positioning Technique for Urban Canyons}, 
+  volume={64}, 
+  DOI={10.1017/S0373463311000087}, 
+  number={3}, 
+  journal={Journal of Navigation}, 
+  author={Groves, Paul D.}, 
+  year={2011}, 
+  pages={417–430}
 }
 
-@article{Groves2011ShadowMatching,
-  author  = {Groves, Paul D. and Jiang, Zihuan and Wang, Lei and Ziebart, Mark},
-  title   = {Shadow Matching: A New {GNSS} Positioning Technique for Urban Canyons},
-  journal = {The Journal of Navigation},
-  year    = {2011},
-  volume  = {64},
-  number  = {3},
-  pages   = {417--430},
-  doi     = {10.1017/S0373463311000087}
+@ARTICLE{10.3389/frobt.2022.832165,
+  AUTHOR={Aguiar, André Silva  and Neves dos Santos, Filipe  and Sobreira, Héber  and Boaventura-Cunha, José  and Sousa, Armando Jorge },        
+  TITLE={Localization and Mapping on Agriculture Based on Point-Feature Extraction and Semiplanes Segmentation From 3D LiDAR Data},     
+  JOURNAL={Frontiers in Robotics and AI},    
+  VOLUME={Volume 9 - 2022},
+  YEAR={2022},
+  URL={https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2022.832165},
+  DOI={10.3389/frobt.2022.832165},
+  ISSN={2296-9144},
 }
 
-@article{Yan2022Greenhouse,
-  author  = {Yan, Yaxuan and Zhang, Baohua and Liu, Xiang and Jin, Yanyan and Jiang, Chao and Ding, Jie},
-  title   = {Real-Time Localization and Mapping Utilizing Multi-Sensor Fusion for Agricultural Robots in Greenhouse Environments},
-  journal = {Agronomy},
-  year    = {2022},
-  volume  = {12},
-  number  = {8},
-  article-number = {1740},
-  doi     = {10.3390/agronomy12081740}
+@Article{Yan2022Greenhouse,
+AUTHOR = {Yan, Yaxuan and Zhang, Baohua and Zhou, Jun and Zhang, Yibo and Liu, Xiao’ang},
+TITLE = {Real-Time Localization and Mapping Utilizing Multi-Sensor Fusion and Visual–IMU–Wheel Odometry for Agricultural Robots in Unstructured, Dynamic and GPS-Denied Greenhouse Environments},
+JOURNAL = {Agronomy},
+VOLUME = {12},
+YEAR = {2022},
+NUMBER = {8},
+ARTICLE-NUMBER = {1740},
+URL = {https://www.mdpi.com/2073-4395/12/8/1740},
+ISSN = {2073-4395},
+DOI = {10.3390/agronomy12081740}
 }
+
+
 
 @article{Blanch2015ARAIM,
   author  = {Blanch, Juan and Walter, Todd and Enge, Per and Lee, Young and Pervan, Boris and Rippl, Mark and Spletter, Artur and Kropp, Viktor},
@@ -266,16 +287,6 @@
     
 
 
-% @inproceedings{ref:liosam2020shan,
-%   title={LIO-SAM: Tightly-coupled Lidar Inertial Odometry via Smoothing and Mapping},
-%   author={Shan, Tixiao and Englot, Brendan and Meyers, Drew and Wang, Wei and Ratti, Carlo and Rus Daniela},
-%   booktitle={IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-%   pages={5135-5142},
-%   year={2020},
-%   organization={IEEE}
-% }
-
-
 % 本研究针对農業環境中的SLAM特性和约束进行了深入分析，是半構造化場景下定位与建图的典型
 % @article{agri_slam_2023,
 %   author  = {Islam, R. and Habibullah, H. and Hossain, T.},
@@ -300,7 +311,7 @@
 
 @misc{ref:stm32h723zg,
   author       = { STMicroelectronics},
-  title        = {{stm32h723zg datasheet}},
+  title        = {{STM32H723ZG datasheet}},
   howpublished = {\url{https://www.st.com/resource/en/datasheet/stm32h723zg.pdf}},
   note         = {(Accessed on 10/9/2025)},
   keywords     = {refdoc}

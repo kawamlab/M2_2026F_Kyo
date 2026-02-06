@@ -32,12 +32,12 @@ RTK-GNSSによる位置補正を組み合わせる手法を採用する．
 GNSS信号が不安定な環境では，3D-LiDARとIMUを組み合わせた
 LIO(LiDAR Inertial Odometry)が自己位置推定の中核となる．
 LOAM \cite{ref:loam}以降，LIO-SAM \cite{ref:lio_sam} などの最適化手法が発展した．
-近年では計算効率に優れたFAST-LIO2\cite{Xu2022FASTLIO2} が広く利用されている．
+近年では計算効率に優れたFAST-LIO2\cite{ref:fast_lio2} が広く利用されている．
 
 しかし，農業用ハウスのような環境では，
 直線的な通路が続くため縮退と呼ばれる現象が発生しやすい．
 これは進行方向の特徴が不足することでスキャンマッチングが不安定になる現象である．
-その結果，長時間走行でドリフトが蓄積し，地図が歪む原因となる\cite{ref:greenhouse_lio}．
+その結果，長時間走行でドリフトが蓄積し，地図が歪む原因となる\cite{10.3389/frobt.2022.832165}．
 したがって，LIO単独の推定に頼らず，外部基準を用いてドリフトを抑制する手法が重要となる．
 
 \subsection{GNSS誤差に対する既存のアプローチ}
@@ -107,7 +107,7 @@ GNSS 単体，品質監視なしの単純融合，および提案手法を置き
 
 \begin{table}[t]
   \centering
-  \caption{GNSS外れ値対策の比較と本研究の位置づけ}
+  \caption{Comparison of GNSS Outlier Mitigation Methods and the Positioning of This Study}
   \label{tab:related_comparison_stability}
   \small
   \begin{tabular}{p{2.8cm} p{2.4cm} p{2.6cm} p{2.2cm} p{3.0cm}}
@@ -134,10 +134,10 @@ GNSS 単体，品質監視なしの単純融合，および提案手法を置き
     拘束の重みを事後的に低減&
     連続外れ値で崩れる可能性あり\cite{Suenderhauf2012Switchable,Agarwal2013DCS}\\
     \hline
-    \textbf{本研究} \par (LIO基準の品質監視) &
-    \textbf{前処理} \par (入力遮断) &
-    \textbf{LIOとの整合で遮断} &
-    \textbf{不連続と汚染を抑制}\\
+    本研究 \par (LIO基準の品質監視) &
+    前処理 \par (入力遮断) &
+    LIOとの整合で棄却 &
+    不連続と汚染を抑制\\
     \hline
   \end{tabular}
 \end{table}
@@ -157,14 +157,14 @@ Table~\ref{tab:related_comparison_stability} より，
 信頼性の高い自己位置推定は，高精度な生育環境マップを作成する上で不可欠な要素である．
 
 精密農業において，圃場内の微気象（温度，湿度，CO$_2$濃度など）を把握することは重要である．
-固定式のセンサノードは広く普及しているが，設置コストや電源確保の面から，
+固定式のセンサノードは広く普及しているが\cite{ref:mobile_sensing_review}，設置コストや電源確保の面から，
 細かな空間分解能でデータを取得することには限界がある．
 これに対し，移動ロボットにセンサを搭載して巡回計測を行うことで，
-より高密度な環境マップを作成する試みが進んでいる\cite{ref:mobile_sensing_review}．
+より高密度な環境マップを作成する試みが進んでいる．
 
 また，作物の状態を傷つけずに診断する手法として，
 分光反射率の計測が注目されている．近年では，MEMS技術を活用した小型分光センサ（C12880MA等）が登場し，
-ドローンやロボットへの搭載が容易になった\cite{ref:drone_spectral}．
+ドローンやロボットへの搭載が容易になった\cite{ref:spectral}．
 
 先行研究\cite{ref:Kobayashi2021AGV}では，このセンサを用いた計測システムが構築されたが，
 移動しながらの連続的な計測が難しいことや，回路設計の制約によりデータ取得速度が\SI{50}{\kilo\hertz}程度に留まるという課題があった．
@@ -185,7 +185,7 @@ Table~\ref{tab:related_comparison_stability} より，
 
 まず，ハウス環境のデータからNLOS等の外れ値の発生傾向を整理し，
 自己位置推定の破綻を招く条件を明確にした．これに基づき，
-受信機の状量だけでなくLIOとの整合性によってGNSS信号を評価する監視モジュールを提案し，
+受信機の状態量だけでなくLIOとの整合性によってGNSS信号を評価する監視モジュールを提案し，
 信号劣化時でも地図の破壊を防ぎつつ正確な位置補正を行う手法を実現した．
 さらに，分光センサC12880MAの駆動方式を最適化することで \SI{5}{\mega\hertz} の高速サンプリングを達成し，
 これらを統合して環境マッピングを実証する．
