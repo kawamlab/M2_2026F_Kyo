@@ -7,13 +7,13 @@
 \label{ch:method}
 
 本章では，農業用ハウスのようにGNSSの品質が不安定な環境においても，
-安定して動作する自己位置推定システムを構築する．
+ロバストに動作する自己位置推定システムを構築する．
 具体的には，LIOとRTK-GNSSを統合し，電波の遮蔽やマルチパスによる誤差を抑制する手法について述べる．
 なお，本章ではRTK補正を前提とした出力をRTK-GNSS，それらを総称してGNSS観測と呼ぶ．
 
 本手法の特徴は，受信機の状態量に基づく判定と，LIOの移動量との整合性を利用したGNSS品質監視モジュールを提案する点にある．
 このモジュールは，見かけ上の精度情報が良好であっても，
-実際には反射波などの影響で数メートルの誤差が含まれるデータを効果的に検知・排除する．
+実際にはマルチパスなどの影響で数メートルの誤差が含まれる観測値をリアルタイムで検知し，棄却する．
 提案手法によって，バックエンドのグラフ最適化に信頼できるデータのみを選別して投入することで，
 長時間走行における自己位置推定の安定性を向上させる．
 
@@ -30,12 +30,12 @@
   \centering
   \includegraphics[width=0.9\linewidth]{figures/3/system.png}
   \caption{Overview of the system architecture and data flow. 
-          The PC-side ROS 2 stack runs RTAB-Map to generate a 
-          globally consistent map and pose estimates, while the AGV-side ROS 2 stack 
+          The PC-side ROS 2 runs RTAB-Map to generate a 
+          globally consistent map and pose estimates, while the AGV-side ROS 2 
           runs FAST-LIO2 to provide registered point clouds and odometry. 
           Sensor topics are exchanged via ROS 2.
           Navigation2, incorporating STVL for 3D obstacle avoidance, 
-          serves as the decision-making layer. it processes the SLAM 
+          serves as the decision-making layer. It processes the SLAM 
           data to generate and send velocity commands to the AGV.}
   \label{fig:system_overview}
 \end{figure}
@@ -152,15 +152,15 @@ Navigation2が経路計画と走行制御を行う．最終的に，最適化さ
 これは，ハウスの骨組みや作物による電波の遮蔽，反射，あるいは補正情報の中断などが原因である．
 本研究では，これらの品質低下のGNSS信号を区別すべき3つの故障モードとして整理する．
 
-1つ目はGNSS利用不可である．これは，電波の遮蔽や補正データの途絶により，
+第一に，GNSS利用不可である．これは，電波の遮蔽や補正データの途絶により，
 測位解そのものが得られない，あるいは情報として使えない状態を指す．
 
-2つ目はNLOSやマルチパスによる大きな誤差である．
+第二に，NLOSやマルチパスによる大きな誤差である．
 これは，受信機の表示が良好で誤差の推定値も小さいにもかかわらず，
 実際には位置が数メートル飛んでしまう状態である．
 本研究では，この見かけ上は正しいが実際には誤っているデータを排除することに注目する．
 
-3つ目はLIOの縮退である．ハウスの通路など形状が単純な場所では，
+第三に，LIOの縮退である．ハウスの通路など形状が単純な場所では，
 LiDARのデータだけでは位置を特定しにくくなり，縮退が発生しやすい．
 また，不整地では車輪がスリップしやすいため，車輪オドメトリは位置推定には適さないと判断した．
 
@@ -175,7 +175,7 @@ LiDARのデータだけでは位置を特定しにくくなり，縮退が発生
 そのため，GNSSデータをリアルタイムで選別する品質監視モジュールを設計した．
 農業用ハウスでは，電波の遮蔽や反射，補正情報の中断により，大きな誤差が含まれる可能性がある．
 このとき，誤ったデータが1つでもRTAB-Mapに入力されると，
-地図全体が歪んでしまう．したがって，本手法ではGNSSの重みを調整するのではなく，採用か遮断かの2通りで制御を行う．
+地図全体が歪んでしまう．したがって，本手法ではGNSSの重みを調整するのではなく，採択または遮断の二値制御を適用する．
 
 \subsection{入出力仕様と遮断の実装}
 \label{subsec:supervisor_io}
@@ -185,7 +185,8 @@ LiDARのデータだけでは位置を特定しにくくなり，縮退が発生
 
 \begin{itemize}
   \item 採用: データをそのままRTAB-Mapへ送り，本来の共分散を保持する．
-  \item 遮断: データをRTAB-Mapへ送らない，または非常に大きな共分散に置き換えることで，そのデータを実質的に無効化する．
+  \item 遮断: 観測値を無効と見なし，バックエンドへの転送を停止する．
+  共分散行列の対角成分を極大値に置き換えることで，そのデータを実質的に無効化する．
 \end{itemize}
 反射波などの影響がある環境では，受信機が精度は良いと誤判定して小さな共分散を報告することがある．
 この場合，単に重みを少し軽くするだけでは誤ったデータの影響が残ってしまう．
@@ -215,7 +216,7 @@ $$\mathrm{diag}(C_{\mathrm{blk}},C_{\mathrm{blk}},C_{\mathrm{blk}})$$
 完全性監視は，受信機の状態が良好であっても，
 NLOSなどによって生じる大きな位置誤差を検知するための仕組みである．
 本手法では，絶対位置を直接比較するのではなく，
-短い時間（$\Delta T$）の間にロボットがどれだけ移動したかという移動量増分を比較する．
+短い時間（$\Delta T$）の間にロボットが微小時間$\Delta T$におけるLIOの相対変位とGNSSの相対変位の整合性を評価する．
 
 時刻$t$におけるGNSSの位置を$\bm{p}_{\mathrm{gnss}}(t)$，LIOによる位置を$\bm{p}_{\mathrm{lio}}(t)$とすると，
 両者の移動量の差$\bm{r}(t)$ は次のように定義される．
@@ -361,7 +362,7 @@ $\mathrm{trace}(\Sigma_{\mathrm{gnss}})$が必ずしもそれに追従して増�
   \includegraphics[width=\linewidth]{figures/3/10_23_2.png} 
   \caption{GNSS trajectory discontinuity observed on Oct. 23, 2025.
 (a) Global trajectory with the anomalous segment highlighted. 
-(b) Close-up view showing an instantaneous position jump of approximately 1.2 m, 
+(b) Enlarged view showing an instantaneous position jump of approximately 1.2 m, 
 where the raw GNSS trajectory deviates from the expected continuity.}
   \label{fig:gnss_jump_1023}
 \end{figure}
@@ -383,7 +384,7 @@ where the raw GNSS trajectory deviates from the expected continuity.}
   \includegraphics[width=\linewidth]{figures/3/10_20_2.png}
   \caption{GNSS trajectory discontinuity observed on Oct. 20, 2025.
   (a) Global trajectory overview. 
-  (b) Zoomed view showing a similar instantaneous position jump of approximately 1.3 m, 
+  (b) Enlarged view showing a similar instantaneous position jump of approximately 1.3 m, 
   indicating the reproducibility of the phenomenon.}
   \label{fig:gnss_jump_1020}
 \end{figure}
@@ -407,10 +408,11 @@ GNSSを正解として使うこともできない．
 
 評価の観点は以下の3点である．
 第1に点群地図の重なりを確認する．同じ場所を何度も通ったときに，
-壁や柱が二重になっていないかを見ることで，地図の正しさを判断する．
-第2に軌跡の滑らかさを確認する．ロボットの動きとしてあり得ない急激な位置の飛びがないかを確認する．
+壁面や柱等の構造物に矛盾した重なりが発生していないかを視認し，地図の歪みを評価する．
+第2に軌跡の滑らかさを確認する．車両の運動学的制約に反する，
+非連続な位置の跳躍の有無を確認する．
 第3に復帰時の挙動を確認する．GNSSが不安定な状態から回復したときに，
-地図が壊れずに維持できているかを確認する．
+誤った拘束が地図構造の破綻を引き起こさないかを確認する．
 また，提案手法の動作確認として，システムがデータを遮断
 したタイミングが適切かどうかも併せて確認する．
 
@@ -434,7 +436,7 @@ RTAB-Mapが出力する\texttt{map}座標系の走行軌跡を比較した．
     \begin{minipage}[b]{0.48\textwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/3/traj_zoom_A.png}
-        \caption{Zoom-in view around point A (NLOS-affected segment) in Fig.~\ref{fig:traj_global}.}
+        \caption{Enlarged view around point A (NLOS-affected segment) in Fig.~\ref{fig:traj_global}.}
         \label{fig:traj_zoom_A}
     \end{minipage}
 \end{figure}
@@ -452,7 +454,7 @@ AはGNSSのNLOS影響が疑われる区間であり，
 \begin{figure}[tb]
   \centering
   \includegraphics[width=\linewidth]{figures/3/traj_error.png}
-  \caption{Time history of the trajectory separation between the proposed and naive methods.}
+  \caption{Positional difference over time between the proposed and naive methods.}
   \label{fig:traj_error}
 \end{figure}
 
@@ -491,14 +493,14 @@ Fig.~\ref{fig:traj_global}～Fig.~\ref{fig:traj_error}では差が顕著に現�
   \begin{subfigure}[t]{0.49\linewidth}
     \centering
     \includegraphics[width=\linewidth,height=0.36\textheight,keepaspectratio]{figures/3/LIO_NLOS_FIX_all.png}
-    \caption{Naive GNSS–LIO fusion (global view).}
+    \caption{Naive GNSS-LIO fusion, where the boxed region indicates the area around the observed anomaly.}
     \label{fig:naive_overview}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.49\linewidth}
     \centering
     \includegraphics[width=\linewidth,height=0.36\textheight,keepaspectratio]{figures/3/LIO_NLOS_FIX_part.png}
-    \caption{Naive GNSS–LIO fusion (zoom-in view).}
+    \caption{Enlarged view of the boxed region in (a)}
     \label{fig:naive_zoom}
   \end{subfigure}
 
@@ -508,23 +510,19 @@ Fig.~\ref{fig:traj_global}～Fig.~\ref{fig:traj_error}では差が顕著に現�
   \begin{subfigure}[t]{0.49\linewidth}
     \centering
     \includegraphics[width=\linewidth,height=0.36\textheight,keepaspectratio]{figures/3/Only_LIO.png}
-    \caption{LIO-only mapping (without GNSS constraint).}
+    \caption{LIO-only mapping without GNSS constraints.}
     \label{fig:lio_only}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.49\linewidth}
     \centering
     \includegraphics[width=\linewidth,height=0.36\textheight,keepaspectratio]{figures/3/LIO+proposed.png}
-    \caption{Mapping with proposed method.}
+    \caption{Mapping result with the proposed method.}
     \label{fig:proposed}
   \end{subfigure}
 
   \caption{
-  Mapping results for the 2025-10-23 dataset(white: point cloud map, yellow: estimated trajectory).
-(a) Naive GNSS–LIO fusion (global view), where the boxed region indicates the area around the observed anomaly.
-(b) Zoom-in view of the boxed region in (a).
-(c) LIO-only mapping without GNSS constraints.
-(d) Mapping result with the proposed method enabled.
+  Mapping results for the 2025-10-23 dataset (white: point cloud map, yellow: estimated trajectory).
   }
   \label{fig:map_comparison_4panel}
 \end{figure}
@@ -553,7 +551,7 @@ GNSS観測が適切に排除されていることが分かる．
   \centering
   \includegraphics[width=\linewidth]{figures/3/timeline_1023.pdf}
   \caption{Time history of the median NIS and the acceptance decision for the 2025-10-23 dataset.
-The dashed line indicates the threshold $\gamma_{\text{pass}}$, and the top bar shows the PASS/FAIL decision.}
+The dashed line indicates the threshold $\gamma_{\text{pass}}$, and the color bar shows the PASS/FAIL decision.}
   \label{fig:timeline_1023}
 \end{figure}
 

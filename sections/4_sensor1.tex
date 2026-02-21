@@ -10,10 +10,10 @@
 以降は，主要要素である分光センサの高速取得の実装と評価を示す．
 実験環境（信州大学繊維学部の圃場）では，
 ロボットが走行しながら連続的に計測を行うため，
-分光データの取得には安定性が求められる．
+分光データの取得には高い時間分解能が要求される．
 
 本研究で使用する浜松ホトニクス製の超小型分光センサC12880MAは，外部クロックに同期して信号を出力する仕様である．
-しかし，一般的な割り込み処理に基づくデータ取得方法では，動作が高速になると処理が追いつかず，
+しかし，一般的な割り込み処理に基づくデータ取得方法では，動作が高速になるとCPUの処理限界を超過し，
 データの欠落やタイミングのズレが生じやすい．
 そこで本研究では，まず再現実験によって割り込み処理の限界を示した上で，
 DMA（Direct Memory Access，以下，DMA）を用いたデータ取得システムを設計・実装した．
@@ -31,13 +31,13 @@ DMA（Direct Memory Access，以下，DMA）を用いたデータ取得システ
 \begin{figure}[b]
   \centering
   \includegraphics[width=0.5\linewidth]{figures/4/c12880ma.png}
-  \caption{Miniature spectrometer C12880MA used in the proposed spectral sensing system}
+  \caption{Miniature spectrometer C12880MA used in this study.}
   \label{fig:c12880ma_photo}
 \end{figure}
 
 \begin{table}[t]
   \centering
-  \caption{Key specifications of the C12880MA spectrometer relevant to this study}
+  \caption{Key specifications of the C12880MA spectrometer.}
   \label{tab:c12880ma_spec}
   \begin{tabular}{l c}
     \hline
@@ -84,18 +84,14 @@ C12880MAは外部クロックに同期して信号を出力するため，MCU側
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/4/placeholder_sensor_unit_photo.pdf}
-  \caption{Photographs of the developed sensor unit. 
-  (A) Top view of the sensor board integrating the C12880MA, BME280, and S300L-3V. 
-  (B) Oblique view showing the component layout. 
-  (C) Top view with the optical bandpass filter holder mounted. 
-  (D) The fully assembled unit ready for installation.}
+  \caption{Photographs of the developed sensor unit. (a) Top view of the sensor board integrating the C12880MA, BME280, and S300L-3V. (b) Oblique view showing the component layout. (c) Top view with the optical bandpass filter holder mounted. (d) The fully assembled unit ready for installation.}
   \label{fig:sensor_unit_photo}
 \end{figure}
 
 
 \begin{table}[t]
   \centering
-  \caption{Sensor unit components and key specifications (overview)}
+  \caption{Sensor unit components and key specifications}
   \label{tab:sensor_unit_specs}
   \setlength{\tabcolsep}{4pt}
   \renewcommand{\arraystretch}{1.15}
@@ -126,11 +122,11 @@ C12880MAは外部クロックに同期して信号を出力するため，MCU側
 \section{従来方式の課題}
 C12880MAセンサは，入力信号（ST信号）の立ち下がり後にTRG信号を出力し，
 これに同期してビデオ信号（VIDEO信号）を更新する仕様である（Fig.~\ref{fig:c12880ma_timing}）．
-従来の手法では，このTRG信号の立ち上がりを検知して割込みを発生させ，
-その処理ルーチン（ISR）内でADCを起動してデータを読み出していた\cite{ref:Kobayashi2021AGV}．
+従来の手法では，このTRG信号の立ち上がりを割り込みとして検知し，
+割り込みサービスルーチン（ISR）内部で内でADCを起動してデータを読み出していた\cite{ref:Kobayashi2021AGV}．
 しかし，5\si{\mega\hertz}という高速なクロックで動作させる場合，
 TRG信号の周期は\SI{200}{\nano\second}程度と極めて短くなる．
-この時間スケールでは，割込み処理に入るまでの遅延や処理時間のわずかなばらつきが無視できず，
+この時間スケールでは，割込み処理に入るまでの遅延や処理時間のばらつきが無視できず，
 データの取りこぼしやタイミングのズレが頻発する．
 したがって，センサ本来の性能を引き出すには，
 ソフトウェアによる割込み処理に依存しない，ハードウェアレベルでの同期機構が不可欠である．
@@ -159,7 +155,7 @@ TRG信号の周期は\SI{200}{\nano\second}程度と極めて短くなる．
 
   \caption{Comparison of acquisition data paths.
   In the conventional method, the CPU handles every TRG event in an ISR, which becomes the bottleneck at MHz rates.
-  In the proposed method, the TRG edge is captured by a timer and directly drives ADC conversion via an external trigger, while DMA streams samples to memory; CPU involvement is limited to frame start/end control.}
+  In the proposed method, the TRG edge is captured by a timer and directly drives ADC conversion via an external trigger, while DMA streams samples to memory. CPU involvement is limited to frame start/end control.}
   \label{fig:acq_arch_compare}
 \end{figure}
 
@@ -172,7 +168,7 @@ TRG信号の周期は\SI{200}{\nano\second}程度と極めて短くなる．
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\linewidth]{figures/4/placeholder_C12880MA_timing.png}
-  \caption{Timing diagram of the C12880MA: excerpted from the datasheet\cite{ref:C12880MA}}
+  \caption{Timing diagram of the C12880MA\cite{ref:C12880MA}.}
   \label{fig:c12880ma_timing}
 \end{figure}
 
@@ -181,7 +177,7 @@ TRG信号の周期は\SI{200}{\nano\second}程度と極めて短くなる．
   \includegraphics[width=0.98\linewidth]{figures/4/c12880ma_pixel_index_mapping.pdf}
   \caption{C12880MA readout rule and pixel index mapping between sensor-side definition and DMA buffer in this work. 
   The sensor pixel index is defined from the falling edge of ST (\(t=0\)), where pixels \#1--\#88 are invalid and pixels \#89--\#376 are valid (288 pixels). 
-  Due to software start latency, sensor pixels \#1--\#4 are not captured. therefore, the nominal valid start at sensor pixel \#89 appears at DMA buffer sample \#85.}
+  Due to software start latency, sensor pixels \#1--\#4 are not captured. Therefore, the nominal valid start at sensor pixel \#89 appears at DMA buffer sample \#85.}
   \label{fig:c12880ma_readout_rule}
 \end{figure}
 
@@ -224,7 +220,7 @@ DMAを併用してCPU負荷を低減した場合でも，\SI{130}{\kilo\hertz}�
 ソフトウェア割込みを介在させないハードウェア同期取得を構築した．
 C12880MAは，CLK信号を連続的に入力し，ST信号によって積分区間を制御する仕様である．
 提案手法では，TRG信号に同期したハードウェアトリガでADC変換を直接駆動し，
-DMAを用いて画素データをス逐次転送する．
+DMAを用いて画素データを逐次転送する．
 
 \subsection{取得タイミング設計}
 \label{subsec:acq_sequence}
@@ -232,7 +228,7 @@ DMAを用いて画素データをス逐次転送する．
 (i) STをHighに設定して積分を開始し，所定の積分時間 \(T_{\mathrm{int}}\) だけ待機する．
 (ii) STをLowへ遷移させて積分を終了し，直後にADCをDMAモードで開始する．
 (iii) 以降はTRG信号の立上りに同期してADC変換が自動的に実行され，DMAによりバッファへ連続転送される．
-(iv) DMA転送完了MCUのcallbackによりフレーム完了を検知し，次フレーム準備としてSTをHighへ戻す．
+(iv) DMAコントローラが転送完了割り込みを発生させるによりフレーム完了を検知し，次フレーム準備としてSTをHighへ戻す．
 この構成により，
 各サンプルの取得タイミングはTRG信号によって規定され，
 CPUの介入はフレームの開始と終了のみに限定される．
@@ -280,7 +276,7 @@ C12880MAは入力されるCLK信号に同期してTRG信号を出力する．
 \label{subsec:eval_h7}
 本研究では最大 \SI{5}{\mega\hertz} のサンプリング速度を実現するため，STM32H723ZGに提案アーキテクチャを実装した．
 STM32H7シリーズではデータキャッシュが有効に機能するため，
-DMAがメモリに書き込んだ最新データをCPUが即座に読み出せないキャッシュ・コヒーレンシの問題が発生する場合がある．
+DMAがメモリに書き込んだ最新データをCPUが即座に読み出せないキャッシュコヒーレンシ（Cache Coherency）の不整合が発生する場合がある．
 そこで本実装では，DMA の転送先バッファをキャッシュの影響を受けないDTCM（Data Tightly Coupled Memory）領域に配置することで，
 データの整合性を確保した．
 加えて，ADCのハードウェアキャリブレーションとトリガ設定を最適化することで，目標とする\SI{5}{\mega\hertz}での連続取得に成功した．
@@ -288,7 +284,7 @@ DMAがメモリに書き込んだ最新データをCPUが即座に読み出せ�
 Fig.~\ref{fig:scope_clk_trg_video_eos}に，\SI{5}{\mega\hertz}動作時におけるオシロスコープの計測画面を示す．
 ここではCH1をTRG信号，CH2をCLK信号，CH3をEOS信号，CH4をVIDEO信号としている．
 波形を確認すると，TRG の立ち上がりに同期して VIDEO信号が遷移している様子や，
-EOS信号の発生付近でデータ出力が停止する正常な挙動が確認できる．
+EOS信号の発生付近でデータ出力が停止する正常なシーケンスが確認された．
 
 \begin{figure}[t]
   \centering
@@ -335,7 +331,8 @@ Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件では
 同(b)の自然光下では光源に対応したスペクトルピークが捉えられている．
 また，光源との距離を変えた同(c)および同(d)を比較すると，
 光量に応じてVIDEO 信号の振幅が変化しており，
-本システムが光量変化に対する基本的な応答性を有していることが分かる．
+本システムが光量変化に対する欠落や位相のズレを伴うことなく
+センサのアナログ出力を正確にデジタル化できていることが分かる．
 
 
 \begin{figure}[h]
@@ -441,7 +438,8 @@ Fig.~\ref{fig:st_video_combined_conditions}(a)の遮光条件では
 BME280およびS300L-3Vをシステムに統合した．これら環境センサの取得処理そのものは先行研究で確立された実装に基づくが，
 本研究ではセンサユニットのMCUをSTM32へ変更したことに伴い，
 デバイスドライバおよび制御を再設計し，
-既存処理をSTM32環境へポーティングした．具体的には，S300L-3VやBME280はI\(^2\)C通信により所定周期で計測する．
+HAL（Hardware Abstraction Layer）ベースで再設計した．
+具体的には，S300L-3VやBME280はI\(^2\)C通信により所定周期で計測する．
 各計測値にはMCU内の単調増加タイムスタンプを付与し，
 分光フレームと同一の時刻系でログ化することで，走行中の計測データとして統合可能とした．
 % 収集したデータは上位計算機へ周期的に送信し記録する．通信方式およびデータフォーマットの詳細は，
